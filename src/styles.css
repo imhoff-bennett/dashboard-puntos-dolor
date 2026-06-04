@@ -1233,6 +1233,17 @@ p {
   font-size: 0.82rem;
 }
 
+.form-error {
+  margin: 0;
+  border: 1px solid #e5c8c8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--dolor);
+  padding: 10px 11px;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
 .smart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(140px, 1fr));

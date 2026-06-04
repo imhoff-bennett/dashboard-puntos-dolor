@@ -143,6 +143,8 @@ const boardId = () =>
   ).join("");
 
 const localKey = (id) => `mapa-de-compromisos:${id}`;
+const isLocalDevelopment = () =>
+  ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
 
 const translateStatus = (status) => statusTranslations[status] || status;
 
@@ -221,23 +223,38 @@ async function loadBoard(id) {
   try {
     const res = await fetch(`/.netlify/functions/tablero?id=${id}`);
     if (res.ok) return normalizeBoard(await res.json());
+    if (!isLocalDevelopment()) return null;
   } catch {
-    // En desarrollo con Vite, sin funciones de Netlify, se usa localStorage.
+    if (!isLocalDevelopment()) return null;
   }
+
+  // Fallback temporal para correr con Vite puro. Con `netlify dev` y en producción,
+  // la fuente principal es Netlify Blobs vía la Function.
   const stored = localStorage.getItem(localKey(id));
   return stored ? normalizeBoard(JSON.parse(stored)) : null;
 }
 
-async function saveBoard(board) {
-  localStorage.setItem(localKey(board.id), JSON.stringify(board));
+async function saveBoard(board, options = {}) {
+  const { requireRemote = false } = options;
   try {
-    await fetch(`/.netlify/functions/tablero?id=${board.id}`, {
+    const res = await fetch(`/.netlify/functions/tablero?id=${board.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(board)
     });
+    if (!res.ok) {
+      throw new Error(`No se pudo guardar el tablero compartible (${res.status})`);
+    }
+    localStorage.setItem(localKey(board.id), JSON.stringify(board));
+    return { localSaved: true, remoteSaved: true };
   } catch {
-    // La copia local ya dejó persistido el tablero.
+    if (requireRemote) {
+      throw new Error("No se pudo guardar el tablero compartible.");
+    }
+
+    // Fallback temporal para desarrollo sin Netlify Functions.
+    localStorage.setItem(localKey(board.id), JSON.stringify(board));
+    return { localSaved: true, remoteSaved: false };
   }
 }
 
@@ -245,16 +262,23 @@ function Home() {
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   const createBoard = async (event) => {
     event.preventDefault();
     if (!teamName.trim()) return;
     setCreating(true);
-    const id = boardId();
-    const board = emptyBoard(id, teamName.trim(), description.trim());
-    await saveBoard(board);
-    window.history.pushState({}, "", `/tablero/${id}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    setCreateError("");
+    try {
+      const id = boardId();
+      const board = emptyBoard(id, teamName.trim(), description.trim());
+      await saveBoard(board, { requireRemote: !isLocalDevelopment() });
+      window.history.pushState({}, "", `/tablero/${id}`);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch {
+      setCreateError("No se pudo crear un tablero compartible. Revisá que las funciones de Netlify estén activas e intentá de nuevo.");
+      setCreating(false);
+    }
   };
 
   return (
@@ -290,6 +314,7 @@ function Home() {
             <Plus size={18} />
             Crear nuevo tablero
           </button>
+          {createError && <p className="form-error">{createError}</p>}
         </form>
       </section>
     </main>
@@ -301,6 +326,7 @@ function BoardPage({ id }) {
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
+  const [saveError, setSaveError] = useState(false);
   const [guideStep, setGuideStep] = useState(null);
   const [guideMode, setGuideMode] = useState("interactive");
 
@@ -323,7 +349,12 @@ function BoardPage({ id }) {
   useEffect(() => {
     if (!board) return;
     const timer = setTimeout(() => {
-      saveBoard(board).then(() => setSavedAt(new Date()));
+      saveBoard(board, { requireRemote: !isLocalDevelopment() })
+        .then(() => {
+          setSavedAt(new Date());
+          setSaveError(false);
+        })
+        .catch(() => setSaveError(true));
     }, 300);
     return () => clearTimeout(timer);
   }, [board]);
@@ -418,7 +449,7 @@ function BoardPage({ id }) {
           </button>
           <span className="save-state">
             <Check size={15} />
-            {savedAt ? "Guardado" : "Listo"}
+            {saveError ? "No guardado" : savedAt ? "Guardado" : "Listo"}
           </span>
         </div>
       </header>

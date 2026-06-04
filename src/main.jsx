@@ -558,6 +558,16 @@ function FlowGuide({ step, total, data, canAdvance, mode, onStaticMode, onNext, 
       const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
       const centeredLeft = clamp(rect.left + rect.width / 2 - width / 2, margin, window.innerWidth - width - margin);
       const centeredTop = clamp(rect.top + rect.height / 2 - height / 2, margin, window.innerHeight - height - margin);
+
+      if (data.key === "share") {
+        setCardPosition({
+          top: clamp(rect.bottom + gap + 10, margin, window.innerHeight - height - margin),
+          left: clamp(rect.right - width, margin, window.innerWidth - width - margin),
+          width
+        });
+        return;
+      }
+
       const positions = [
         {
           name: "below",

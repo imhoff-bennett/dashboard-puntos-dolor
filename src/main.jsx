@@ -660,7 +660,7 @@ function FlowGuide({ step, total, data, canAdvance, mode, onStaticMode, onNext, 
               </button>
             )}
             {showPrimaryAction && (
-              <button className="guide-action-button" onClick={onNext} disabled={!isStatic && !canAdvance}>
+              <button className="guide-action-button" onClick={onNext} disabled={!isStatic && !isInformational && !canAdvance}>
                 {isLast ? "Terminar" : isInformational && !isStatic ? "Continuar" : "Siguiente"}
                 {!isLast && <ChevronRight size={17} />}
               </button>

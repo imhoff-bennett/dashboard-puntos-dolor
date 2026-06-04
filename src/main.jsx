@@ -81,6 +81,11 @@ const guideSteps = [
     key: "close",
     title: "Dale cierre al compromiso",
     body: "Al final, indicá si el compromiso fue completado o fallido, qué pasó con el punto de dolor y cerrá el ciclo."
+  },
+  {
+    key: "share",
+    title: "Compartí el tablero con tu equipo",
+    body: "Hacé click en Compartir para copiar el enlace. Cualquier persona con esa URL puede entrar y trabajar en este mismo tablero con vos."
   }
 ];
 const statusTranslations = {
@@ -180,7 +185,8 @@ const getGuideCompletion = (board, guideStep) => {
     logTools: board.checkpoints.some((checkpoint) =>
       guideCommitments.some((commitment) => commitment.id === checkpoint.commitmentId)
     ),
-    close: guideCommitments.some((commitment) => ["Completado", "Fallido"].includes(commitment.status))
+    close: guideCommitments.some((commitment) => ["Completado", "Fallido"].includes(commitment.status)),
+    share: true
   };
 
   return Boolean(completedByStep[stepKey]);
@@ -395,7 +401,7 @@ function BoardPage({ id }) {
   useEffect(() => {
     if (!board || guideStep === null) return;
     const stepKey = guideSteps[guideStep]?.key;
-    if (["winner", "logTools"].includes(stepKey)) return;
+    if (["winner", "logTools", "share"].includes(stepKey)) return;
     if (guideMode === "static" || !getGuideCompletion(board, guideStep)) return;
     const timer = window.setTimeout(() => {
       if (guideStep >= guideSteps.length - 1) {
@@ -429,7 +435,7 @@ function BoardPage({ id }) {
         </div>
         <div className="top-actions">
           <button
-            className="ghost-button"
+            className={`ghost-button ${guideSteps[guideStep]?.key === "share" ? "guide-highlight" : ""}`}
             onClick={() => navigator.clipboard?.writeText(shareUrl)}
             title="Copiar URL"
           >
@@ -532,7 +538,7 @@ function BoardStats({ board }) {
 function FlowGuide({ step, total, data, canAdvance, mode, onStaticMode, onNext, onSkipAll }) {
   const isLast = step === total - 1;
   const isStatic = mode === "static";
-  const isInformational = ["winner", "logTools"].includes(data.key);
+  const isInformational = ["winner", "logTools", "share"].includes(data.key);
   const showPrimaryAction = isStatic || isInformational;
   const [cardPosition, setCardPosition] = useState(null);
   const cardRef = React.useRef(null);

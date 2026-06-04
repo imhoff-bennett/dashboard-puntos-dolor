@@ -225,6 +225,13 @@ select:focus {
   justify-content: flex-end;
 }
 
+.share-guide-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+}
+
 .save-state {
   display: inline-flex;
   align-items: center;
@@ -1776,8 +1783,14 @@ p {
   }
 
   .top-actions,
+  .share-guide-actions,
   .top-actions button {
     width: 100%;
+  }
+
+  .share-guide-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .board-stats {

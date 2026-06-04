@@ -85,7 +85,7 @@ const guideSteps = [
   {
     key: "share",
     title: "Compartí el tablero con tu equipo",
-    body: "Hacé click en Compartir para copiar el enlace. Cualquier persona con esa URL puede entrar y trabajar en este mismo tablero con vos."
+    body: "Hacé click en Compartir para copiar el enlace. Cualquier persona con esa URL puede entrar y trabajar en este mismo tablero con vos.\n\nSi necesitás volver a ver esta guía, hacé click en Guía."
   }
 ];
 const statusTranslations = {
@@ -401,7 +401,7 @@ function BoardPage({ id }) {
   useEffect(() => {
     if (!board || guideStep === null) return;
     const stepKey = guideSteps[guideStep]?.key;
-    if (["winner", "logTools", "share"].includes(stepKey)) return;
+    if (["winner", "logTools", "close", "share"].includes(stepKey)) return;
     if (guideMode === "static" || !getGuideCompletion(board, guideStep)) return;
     const timer = window.setTimeout(() => {
       if (guideStep >= guideSteps.length - 1) {
@@ -434,25 +434,27 @@ function BoardPage({ id }) {
           {board.description && <p>{board.description}</p>}
         </div>
         <div className="top-actions">
-          <button
-            className={`ghost-button ${guideSteps[guideStep]?.key === "share" ? "guide-highlight" : ""}`}
-            onClick={() => navigator.clipboard?.writeText(shareUrl)}
-            title="Copiar URL"
-          >
-            <LinkIcon size={17} />
-            Compartir
-          </button>
-          <button
-            className="ghost-button"
-            onClick={() => {
-              setGuideMode("interactive");
-              setGuideStep(0);
-            }}
-            title="Ver guía"
-          >
-            <Sparkles size={17} />
-            Guía
-          </button>
+          <div className={`share-guide-actions ${guideSteps[guideStep]?.key === "share" ? "guide-highlight" : ""}`}>
+            <button
+              className="ghost-button"
+              onClick={() => navigator.clipboard?.writeText(shareUrl)}
+              title="Copiar URL"
+            >
+              <LinkIcon size={17} />
+              Compartir
+            </button>
+            <button
+              className="ghost-button"
+              onClick={() => {
+                setGuideMode("interactive");
+                setGuideStep(0);
+              }}
+              title="Ver guía"
+            >
+              <Sparkles size={17} />
+              Guía
+            </button>
+          </div>
           <span className="save-state">
             <Check size={15} />
             {saveError ? "No guardado" : savedAt ? "Guardado" : "Listo"}
@@ -538,7 +540,7 @@ function BoardStats({ board }) {
 function FlowGuide({ step, total, data, canAdvance, mode, onStaticMode, onNext, onSkipAll }) {
   const isLast = step === total - 1;
   const isStatic = mode === "static";
-  const isInformational = ["winner", "logTools", "share"].includes(data.key);
+  const isInformational = ["winner", "logTools", "close", "share"].includes(data.key);
   const showPrimaryAction = isStatic || isInformational;
   const [cardPosition, setCardPosition] = useState(null);
   const cardRef = React.useRef(null);

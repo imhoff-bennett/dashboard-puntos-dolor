@@ -204,7 +204,14 @@ select:focus {
   min-width: 0;
 }
 
+.board-heading {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
 .topbar h1 {
+  margin: 0;
   font-size: clamp(2rem, 4vw, 3.4rem);
   line-height: 1.02;
   overflow-wrap: anywhere;
@@ -215,6 +222,42 @@ select:focus {
   max-width: 760px;
   color: #64686f;
   overflow-wrap: anywhere;
+}
+
+.board-editable-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.board-editable-field h1,
+.board-editable-field p {
+  min-width: 0;
+}
+
+.board-description-field {
+  align-items: center;
+  max-width: min(960px, 100%);
+}
+
+.board-description-field.editing {
+  max-width: 100%;
+}
+
+.board-title-input {
+  width: min(960px, 100%);
+  color: #191a1c;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  padding: 7px 9px;
+}
+
+.board-description-input {
+  width: 100%;
+  min-height: 58px;
 }
 
 .top-actions {
@@ -333,22 +376,24 @@ select:focus {
 
 .map-summary-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) 30px 30px 30px;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .map-summary {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(260px, auto);
+  grid-template-columns: minmax(180px, 1fr) minmax(0, auto);
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   border: 0;
   background: transparent;
   color: inherit;
   padding: 0;
   text-align: left;
+  min-width: 0;
 }
 
 .summary-title {
@@ -366,8 +411,9 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .summary-meta span {
@@ -383,7 +429,7 @@ select:focus {
   font-weight: 750;
 }
 
-.summary-delete-button {
+.summary-action-button {
   position: relative;
   display: inline-grid;
   place-items: center;
@@ -394,6 +440,12 @@ select:focus {
   background: transparent;
   color: #9aa0a6;
   padding: 0;
+}
+
+.summary-action-button:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--azul);
 }
 
 .summary-delete-button:hover {
@@ -413,7 +465,7 @@ select:focus {
   padding: 0;
 }
 
-.summary-delete-button[data-tooltip]::after,
+.summary-action-button[data-tooltip]::after,
 .subtle-icon-button[data-tooltip]::after {
   position: absolute;
   right: 0;
@@ -438,7 +490,7 @@ select:focus {
   box-shadow: 0 10px 30px rgba(32, 33, 36, 0.1);
 }
 
-.summary-delete-button[data-tooltip]:hover::after,
+.summary-action-button[data-tooltip]:hover::after,
 .subtle-icon-button[data-tooltip]:hover::after {
   opacity: 1;
   transform: translateY(0);
@@ -1375,6 +1427,22 @@ p {
   font-weight: 750;
 }
 
+.log-date-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.log-date-field input {
+  width: 150px;
+  min-height: 36px;
+  padding: 7px 8px;
+}
+
+.log-date-field button {
+  min-height: 36px;
+}
+
 .log-list {
   display: grid;
   gap: 8px;
@@ -1486,6 +1554,10 @@ p {
 
 .action-alert-modal p {
   margin: 0;
+}
+
+.pain-edit-modal {
+  width: min(520px, 100%);
 }
 
 .action-alert-modal button {
@@ -1746,6 +1818,16 @@ p {
   }
 
   .voting-header button {
+    width: 100%;
+  }
+
+  .log-heading {
+    display: grid;
+  }
+
+  .log-date-field,
+  .log-date-field input,
+  .log-date-field button {
     width: 100%;
   }
 

@@ -312,7 +312,7 @@ function Home() {
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Ej: Conversación sobre priorización del roadmap"
+              placeholder="¿A qué le harán seguimiento con este tablero?"
               rows={3}
             />
           </label>
@@ -335,6 +335,9 @@ function BoardPage({ id }) {
   const [saveError, setSaveError] = useState(false);
   const [guideStep, setGuideStep] = useState(null);
   const [guideMode, setGuideMode] = useState("interactive");
+  const [editingBoardField, setEditingBoardField] = useState(null);
+  const [boardTitleDraft, setBoardTitleDraft] = useState("");
+  const [boardDescriptionDraft, setBoardDescriptionDraft] = useState("");
 
   useEffect(() => {
     loadBoard(id).then((data) => {
@@ -370,6 +373,41 @@ function BoardPage({ id }) {
       const next = typeof updater === "function" ? updater(current) : updater;
       return { ...next, updatedAt: new Date().toISOString() };
     });
+
+  const startEditingBoardField = (field) => {
+    setEditingBoardField(field);
+    setBoardTitleDraft(board.teamName || "");
+    setBoardDescriptionDraft(board.description || "");
+  };
+
+  const saveBoardField = () => {
+    if (editingBoardField === "teamName" && !boardTitleDraft.trim()) return;
+    updateBoard({
+      ...board,
+      teamName: editingBoardField === "teamName" ? boardTitleDraft.trim() : board.teamName,
+      description:
+        editingBoardField === "description"
+          ? boardDescriptionDraft.trim()
+          : board.description
+    });
+    setEditingBoardField(null);
+  };
+
+  const cancelBoardFieldEdit = () => {
+    setEditingBoardField(null);
+    setBoardTitleDraft("");
+    setBoardDescriptionDraft("");
+  };
+
+  const handleBoardFieldKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      saveBoardField();
+    }
+    if (event.key === "Escape") {
+      cancelBoardFieldEdit();
+    }
+  };
 
   const completeGuide = () => {
     localStorage.setItem(`guia-saltada:${id}`, "true");
@@ -423,15 +461,65 @@ function BoardPage({ id }) {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div>
+        <div className="board-heading">
           <div className="brand-row compact">
             <div className="brand-mark">
               <Map size={18} />
             </div>
           <span>Mapa de Compromisos</span>
           </div>
-          <h1>{board.teamName}</h1>
-          {board.description && <p>{board.description}</p>}
+          <div className="board-editable-field">
+            {editingBoardField === "teamName" ? (
+              <input
+                className="board-title-input"
+                value={boardTitleDraft}
+                onChange={(event) => setBoardTitleDraft(event.target.value)}
+                onBlur={saveBoardField}
+                onKeyDown={handleBoardFieldKeyDown}
+                autoFocus
+              />
+            ) : (
+              <>
+                <h1>{board.teamName}</h1>
+                <button
+                  className="subtle-icon-button"
+                  type="button"
+                  onClick={() => startEditingBoardField("teamName")}
+                  aria-label="Editar nombre del equipo"
+                  data-tooltip="Editar"
+                >
+                  <Pencil size={14} />
+                </button>
+              </>
+            )}
+          </div>
+          <div className={`board-editable-field board-description-field ${editingBoardField === "description" ? "editing" : ""}`}>
+            {editingBoardField === "description" ? (
+              <textarea
+                className="board-description-input"
+                value={boardDescriptionDraft}
+                onChange={(event) => setBoardDescriptionDraft(event.target.value)}
+                onBlur={saveBoardField}
+                onKeyDown={handleBoardFieldKeyDown}
+                placeholder="¿A qué le harán seguimiento con este tablero?"
+                rows={2}
+                autoFocus
+              />
+            ) : (
+              <>
+                <p>{board.description || "Sin descripción"}</p>
+                <button
+                  className="subtle-icon-button"
+                  type="button"
+                  onClick={() => startEditingBoardField("description")}
+                  aria-label="Editar descripción"
+                  data-tooltip="Editar"
+                >
+                  <Pencil size={14} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <div className="top-actions">
           <div className={`share-guide-actions ${guideSteps[guideStep]?.key === "share" ? "guide-highlight" : ""}`}>
@@ -732,6 +820,9 @@ function MapFlow({ board, painPoint, updateBoard, guideStep, guideFocusPainPoint
   const [focusedIdeaId, setFocusedIdeaId] = useState(null);
   const [votingOpen, setVotingOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+  const [editingPainPoint, setEditingPainPoint] = useState(false);
+  const [painTitleDraft, setPainTitleDraft] = useState("");
+  const [painDescriptionDraft, setPainDescriptionDraft] = useState("");
   const votingRef = React.useRef(null);
   const isSolved = painPoint.status === "Resuelto";
   const isGuideTarget = guideFocusPainPointId === painPoint.id;
@@ -791,6 +882,29 @@ function MapFlow({ board, painPoint, updateBoard, guideStep, guideFocusPainPoint
     setVotingOpen(false);
   };
 
+  const openPainPointEditor = () => {
+    setPainTitleDraft(painPoint.title || "");
+    setPainDescriptionDraft(painPoint.description || "");
+    setEditingPainPoint(true);
+  };
+
+  const savePainPointEdit = () => {
+    if (!painTitleDraft.trim()) return;
+    updateBoard({
+      ...board,
+      painPoints: board.painPoints.map((item) =>
+        item.id === painPoint.id
+          ? {
+              ...item,
+              title: painTitleDraft.trim(),
+              description: painDescriptionDraft.trim()
+            }
+          : item
+      )
+    });
+    setEditingPainPoint(false);
+  };
+
   const deletePainPoint = () => {
     const commitmentIds = painPointCommitments.map((item) => item.id);
     const nextOutcomes = Object.fromEntries(
@@ -843,7 +957,17 @@ function MapFlow({ board, painPoint, updateBoard, guideStep, guideFocusPainPoint
           </div>
         </button>
         <button
-          className="summary-delete-button"
+          className="summary-action-button"
+          type="button"
+          onClick={openPainPointEditor}
+          title="Editar punto de dolor"
+          aria-label="Editar punto de dolor"
+          data-tooltip="Editar"
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          className="summary-action-button summary-delete-button"
           type="button"
           onClick={() => setDeleteConfirmation("painPoint")}
           title="Eliminar punto de dolor"
@@ -980,6 +1104,16 @@ function MapFlow({ board, painPoint, updateBoard, guideStep, guideFocusPainPoint
             setDeleteConfirmation(null);
             deleteCommitment();
           }}
+        />
+      )}
+      {editingPainPoint && (
+        <PainPointEditModal
+          title={painTitleDraft}
+          description={painDescriptionDraft}
+          setTitle={setPainTitleDraft}
+          setDescription={setPainDescriptionDraft}
+          onCancel={() => setEditingPainPoint(false)}
+          onSave={savePainPointEdit}
         />
       )}
     </article>
@@ -1603,6 +1737,7 @@ function CommitmentPanel({
 function CheckpointPanel({ board, commitment, checkpoints, outcome, updateBoard, guideStep }) {
   const [summary, setSummary] = useState("");
   const [notes, setNotes] = useState("");
+  const [logDate, setLogDate] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingSummary, setEditingSummary] = useState("");
   const [editingNotes, setEditingNotes] = useState("");
@@ -1622,7 +1757,7 @@ function CheckpointPanel({ board, commitment, checkpoints, outcome, updateBoard,
 
   const addCheckpoint = (event) => {
     event.preventDefault();
-    if (!commitment || !summary.trim()) return;
+    if (!commitment || !summary.trim() || !logDate) return;
     updateBoard({
       ...board,
       checkpoints: [
@@ -1630,7 +1765,7 @@ function CheckpointPanel({ board, commitment, checkpoints, outcome, updateBoard,
         {
           id: uid(),
           commitmentId: commitment.id,
-          date: today,
+          date: logDate,
           summary: summary.trim(),
           notes: notes.trim()
         }
@@ -1638,6 +1773,7 @@ function CheckpointPanel({ board, commitment, checkpoints, outcome, updateBoard,
     });
     setSummary("");
     setNotes("");
+    setLogDate("");
   };
 
   const deleteCheckpoint = (checkpointId) => {
@@ -1689,7 +1825,17 @@ function CheckpointPanel({ board, commitment, checkpoints, outcome, updateBoard,
       <form className={`log-form ${guideStep === "log" ? "guide-highlight" : ""}`} onSubmit={addCheckpoint}>
         <div className="log-heading">
           <h3>Log</h3>
-          <span>{formatDate(today)}</span>
+          <div className="log-date-field">
+            <input
+              type="date"
+              value={logDate}
+              onChange={(event) => setLogDate(event.target.value)}
+              aria-label="Fecha del log"
+            />
+            <button className="ghost-button" type="button" onClick={() => setLogDate(today)}>
+              Hoy
+            </button>
+          </div>
         </div>
         <input
           value={summary}
@@ -1702,7 +1848,7 @@ function CheckpointPanel({ board, commitment, checkpoints, outcome, updateBoard,
           placeholder="Notas del avance: qué cambió, qué falta o qué aprendieron"
           rows={2}
         />
-        <button className="secondary-button">
+        <button className="secondary-button" disabled={!summary.trim() || !logDate}>
           <Plus size={16} />
           Registrar log
         </button>
@@ -1895,6 +2041,52 @@ function ConfirmModal({
           <button className={tone === "danger" ? "danger-button" : "primary-button"} type="button" onClick={onConfirm}>
             {icon}
             {confirmLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PainPointEditModal({
+  title,
+  description,
+  setTitle,
+  setDescription,
+  onCancel,
+  onSave
+}) {
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pain-edit-title">
+      <section className="action-alert-modal pain-edit-modal">
+        <div>
+          <h2 id="pain-edit-title">Editar punto de dolor</h2>
+          <p>Ajustá el nombre y el contexto del punto de dolor.</p>
+        </div>
+        <label>
+          Punto de dolor
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Punto de dolor"
+            autoFocus
+          />
+        </label>
+        <label>
+          Contexto
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Contexto del punto de dolor"
+            rows={4}
+          />
+        </label>
+        <div className="modal-actions">
+          <button className="secondary-button" type="button" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button className="primary-button" type="button" onClick={onSave} disabled={!title.trim()}>
+            Guardar
           </button>
         </div>
       </section>
